@@ -2,8 +2,10 @@
 
 namespace App\Http\Controllers\Auth;
 
+use App\Role;
 use App\User;
 use App\Http\Controllers\Controller;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Foundation\Auth\RegistersUsers;
@@ -23,12 +25,43 @@ class RegisterController extends Controller
 
     use RegistersUsers;
 
-    /**
-     * Where to redirect users after registration.
-     *
-     * @var string
-     */
-    protected $redirectTo = '/home';
+    public function showRegistrationForm(Role $role)
+    {
+        return view('auth.register', ['role' => $role]);
+    }
+
+    protected function registered(Request $request, $user)
+    {
+        if ($user->hasRole('pupil')) {
+            $user->pupil()->create([
+                'hobbies'     => '',
+                'description' => '',
+                'pitch_text'  => '',
+                'experience'  => ''
+            ]);
+
+            return redirect()->route('pupil.searchView');
+        }
+
+        if ($user->hasRole('company')) {
+            $user->company()->create([
+                'phone_number'   => '',
+                'branch'         => '',
+                'description'    => '',
+                'employs_number' => ''
+            ]);
+
+            return redirect()->route('company.requestsView');
+        }
+
+        if ($user->hasRole('teacher')) {
+            $user->teacher()->create([
+                'school_name' => $request->school_name
+            ]);
+
+            return redirect()->route('teacher.pupilsView');
+        }
+    }
 
     /**
      * Create a new controller instance.
@@ -48,11 +81,22 @@ class RegisterController extends Controller
      */
     protected function validator(array $data)
     {
-        return Validator::make($data, [
-            'name' => ['required', 'string', 'max:255'],
-            'email' => ['required', 'string', 'email', 'max:255', 'unique:users'],
-            'password' => ['required', 'string', 'min:6', 'confirmed'],
-        ]);
+        if (isset($data['school_name'])) {
+            $validator = Validator::make($data, [
+                'name' => ['required', 'string', 'max:255'],
+                'email' => ['required', 'string', 'email', 'max:255', 'unique:users'],
+                'password' => ['required', 'string', 'min:6', 'confirmed'],
+                'school_name' => ['required', 'string']
+            ]);
+        } else {
+            $validator = Validator::make($data, [
+                'name' => ['required', 'string', 'max:255'],
+                'email' => ['required', 'string', 'email', 'max:255', 'unique:users'],
+                'password' => ['required', 'string', 'min:6', 'confirmed']
+            ]);
+        }
+
+        return $validator;
     }
 
     /**
@@ -63,10 +107,14 @@ class RegisterController extends Controller
      */
     protected function create(array $data)
     {
-        return User::create([
+        $user = User::create([
             'name' => $data['name'],
             'email' => $data['email'],
             'password' => Hash::make($data['password']),
         ]);
+
+        $user->roles()->attach(Role::where('slug', $data['role'])->first());
+
+        return $user;
     }
 }
