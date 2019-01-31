@@ -1,15 +1,18 @@
 @extends('layouts.app')
 
+@section('title', 'Register')
+
 @section('content')
 <div class="container">
     <div class="row justify-content-center">
         <div class="col-md-8">
             <div class="card">
-                <div class="card-header">{{ __('Register') }}</div>
+                <div class="card-header">{{ __('Register') }} as {{ $role->name }}</div>
 
                 <div class="card-body">
-                    <form method="POST" action="{{ route('register') }}">
+                    <form method="POST" action="{{ route('register', ['role' => $role]) }}">
                         @csrf
+                        <input type="hidden" name="role" value="{{ $role->slug }}">
 
                         <div class="form-group row">
                             <label for="name" class="col-md-4 col-form-label text-md-right">{{ __('Name') }}</label>
@@ -60,6 +63,22 @@
                                 <input id="password-confirm" type="password" class="form-control" name="password_confirmation" required>
                             </div>
                         </div>
+
+                        @if ($role->slug == 'teacher')
+                            <div class="form-group row">
+                                <label for="school-name" class="col-md-4 col-form-label text-md-right">{{ __('School name') }}</label>
+
+                                <div class="col-md-6">
+                                    <input id="school-name" type="text" class="form-control{{ $errors->has('school_name') ? ' is-invalid' : '' }}" name="school_name" value="{{ old('school_name') }}" required autofocus>
+
+                                    @if ($errors->has('school_name'))
+                                        <span class="invalid-feedback" role="alert">
+                                            <strong>{{ $errors->first('school_name') }}</strong>
+                                        </span>
+                                    @endif
+                                </div>
+                            </div>
+                        @endif
 
                         <div class="form-group row mb-0">
                             <div class="col-md-6 offset-md-4">
